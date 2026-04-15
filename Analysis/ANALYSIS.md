@@ -81,7 +81,7 @@ The column names in the ERD don't match the actual data (e.g., ERD says "profile
 
 ## Database Redesign
 
-See `redesigned_erd.html` for the visual diagram. Here's the thinking behind it.
+See `redesigned_erd.png` for the visual diagram. Here's the thinking behind it.
 
 The main problems with the current schema are: no referential integrity (nothing stops an event from referencing a nonexistent pid), no constraints to catch bad data at write time (negative MB, inverted dates, etc.), inconsistent column naming, and missing dimension tables (there's no actual sim_cards table).
 
@@ -255,4 +255,4 @@ pip install pandas pyarrow
 python3 analysis.py
 ```
 
-Open `daily_usage_chart.png` for the line chart and `redesigned_erd.png` for the new schema diagram (HTML versions also included if you want the interactive versions).
+Open `daily_usage_chart.png` for the line chart and `redesigned_erd.png` for the new schema diagram.
