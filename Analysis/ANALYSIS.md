@@ -250,18 +250,9 @@ Using NULL for effective_to to mean "currently active" is standard SCD2 pattern 
 
 ## How to reproduce
 
-Requirements: Python 3.10+ (no external packages needed — the parquet reader is pure Python)
-
 ```bash
+pip install pandas pyarrow
 python3 analysis.py
 ```
 
-If you have pandas and pyarrow installed, you can also read the data directly:
-
-```python
-import pandas as pd
-for f in ['usage_events','profile_installation','rate_card','sim_card_plan_history']:
-    print(pd.read_parquet(f'data/{f}.parquet').to_string())
-```
-
-Open `daily_usage_chart.html` in a browser for the interactive chart. Open `redesigned_erd.html` for the new schema diagram.
+Open `daily_usage_chart.png` for the line chart and `redesigned_erd.png` for the new schema diagram (HTML versions also included if you want the interactive versions).
