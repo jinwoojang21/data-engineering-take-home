@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proposed Database Redesign — ERD</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f8f8f6;color:#2c2c2a;padding:2.5rem;max-width:900px;margin:0 auto;line-height:1.5}
+h1{font-size:1.4rem;font-weight:600;margin-bottom:4px}
+.sub{font-size:0.82rem;color:#888;margin-bottom:28px}
+.legend{display:flex;gap:20px;margin-bottom:24px;flex-wrap:wrap}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:12px;color:#5f5e5a}
+.leg-dot{width:10px;height:10px;border-radius:3px}
+.section-label{font-size:11px;letter-spacing:0.06em;color:#888;margin:28px 0 10px;text-transform:uppercase}
+.section-label:first-of-type{margin-top:0}
+.tier{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:8px}
+.tbl{border-radius:10px;overflow:hidden;flex:1;min-width:180px;max-width:280px;border:1px solid #e4e3dd;background:#fff}
+.tbl-head{padding:9px 14px;font-size:13px;font-weight:600;color:#fff}
+.tbl-head.core{background:#534AB7}
+.tbl-head.link{background:#0F6E56}
+.tbl-head.data{background:#185FA5}
+.tbl-head.ref{background:#888780}
+.tbl-body{padding:10px 14px;font-size:12px;line-height:1.9;color:#5f5e5a}
+.tbl-body .f{color:#2c2c2a;font-weight:600;font-family:'SF Mono',Menlo,Consolas,monospace;font-size:11px}
+.tbl-body .k{font-size:9px;padding:1px 5px;border-radius:3px;margin-left:4px;vertical-align:middle;font-weight:600}
+.pk{background:#EEEDFE;color:#534AB7}
+.fk{background:#E1F5EE;color:#0F6E56}
+.ck{background:#FAEEDA;color:#854F0B}
+.rel-section{margin:20px 0 10px;padding:18px;border-radius:10px;background:#fff;border:1px solid #e4e3dd}
+.rel-title{font-size:13px;font-weight:600;margin-bottom:12px}
+.rel{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12px;color:#5f5e5a}
+.rel .a{font-family:'SF Mono',Menlo,Consolas,monospace;font-size:11px;font-weight:600;color:#2c2c2a;min-width:120px;text-align:right}
+.rel .b{font-family:'SF Mono',Menlo,Consolas,monospace;font-size:11px;font-weight:600;color:#2c2c2a;min-width:120px}
+.rel .arrow{color:#b4b2a9;font-size:14px;flex-shrink:0}
+.rel .label{font-size:11px;color:#888;min-width:100px;text-align:center}
+.explain{font-size:11px;color:#888;padding:0 0 6px 140px}
+.note{margin-top:18px;font-size:11px;color:#888;line-height:1.7}
+</style>
+</head>
+<body>
+<h1>Proposed database redesign</h1>
+<p class="sub">Constraints, indices, and full DDL documented in ANALYSIS.md</p>
+
+<div class="legend">
+<div class="leg-item"><div class="leg-dot" style="background:#534AB7"></div> Core entities</div>
+<div class="leg-item"><div class="leg-dot" style="background:#0F6E56"></div> Relationships</div>
+<div class="leg-item"><div class="leg-dot" style="background:#185FA5"></div> Usage data</div>
+<div class="leg-item"><div class="leg-dot" style="background:#888780"></div> Reference / lookup</div>
+</div>
+
+<div class="section-label">Core entities — who and what</div>
+<div class="tier">
+<div class="tbl">
+<div class="tbl-head core">Profiles</div>
+<div class="tbl-body">
+<span class="f">profile_id</span><span class="k pk">PK</span><br>
+<span class="f">profile_type</span><br>
+<span class="f">created_at</span>
+</div>
+</div>
+<div class="tbl">
+<div class="tbl-head core">SIM cards</div>
+<div class="tbl-body">
+<span class="f">sim_card_id</span><span class="k pk">PK</span><br>
+<span class="f">imsi</span><br>
+<span class="f">status</span><span class="k ck">active | suspended | deactivated</span><br>
+<span class="f">created_at</span>
+</div>
+</div>
+<div class="tbl">
+<div class="tbl-head core">Bundles</div>
+<div class="tbl-body">
+<span class="f">bundle_id</span><span class="k pk">PK</span><br>
+<span class="f">bundle_name</span><br>
+<span class="f">is_active</span><br>
+<span class="f">created_at</span>
+</div>
+</div>
+</div>
+
+<div class="section-label">Relationships — how they connect</div>
+<div class="tier">
+<div class="tbl">
+<div class="tbl-head link">Profile installations</div>
+<div class="tbl-body">
+<span class="f">installation_id</span><span class="k pk">PK</span><br>
+<span class="f">profile_id</span><span class="k fk">FK</span><br>
+<span class="f">sim_card_id</span><span class="k fk">FK</span><br>
+<span class="f">effective_from</span><br>
+<span class="f">effective_to</span><br>
+<span class="f">source</span><span class="k ck">portal | api | system</span>
+</div>
+</div>
+<div class="tbl">
+<div class="tbl-head link">SIM card plans</div>
+<div class="tbl-body">
+<span class="f">plan_id</span><span class="k pk">PK</span><br>
+<span class="f">sim_card_id</span><span class="k fk">FK</span><br>
+<span class="f">bundle_id</span><span class="k fk">FK</span><br>
+<span class="f">effective_from</span><br>
+<span class="f">effective_to</span><br>
+<span class="f">change_reason</span><span class="k ck">activation | upgrade | swap</span>
+</div>
+</div>
+<div class="tbl">
+<div class="tbl-head link">Rate cards</div>
+<div class="tbl-body">
+<span class="f">rate_id</span><span class="k pk">PK</span><br>
+<span class="f">bundle_id</span><span class="k fk">FK</span><br>
+<span class="f">country_code</span><br>
+<span class="f">network_code</span><br>
+<span class="f">tech_code</span><span class="k fk">FK</span><br>
+<span class="f">rate_per_mb</span><span class="k ck">must be &gt; 0</span><br>
+<span class="f">currency</span><br>
+<span class="f">priority</span>
+</div>
+</div>
+</div>
+
+<div class="section-label">Data records</div>
+<div class="tier">
+<div class="tbl">
+<div class="tbl-head data">Usage events</div>
+<div class="tbl-body">
+<span class="f">event_id</span><span class="k pk">PK</span><br>
+<span class="f">profile_id</span><span class="k fk">FK</span><br>
+<span class="f">event_timestamp</span><br>
+<span class="f">usage_mb</span><span class="k ck">must be &gt;= 0</span><br>
+<span class="f">country_code</span><br>
+<span class="f">network_code</span><br>
+<span class="f">tech_code</span><span class="k fk">FK</span><br>
+<span class="f">source_file</span><br>
+<span class="f">loaded_at</span>
+</div>
+</div>
+<div class="tbl">
+<div class="tbl-head ref">Network technologies</div>
+<div class="tbl-body">
+<span class="f">tech_code</span><span class="k pk">PK</span><br>
+<span class="f">tech_name</span><br>
+<span class="f">aliases</span><br>
+Normalizes LTE, lte, 4G, 4g<br>into a single "4G" code
+</div>
+</div>
+</div>
+
+<div class="rel-section">
+<div class="rel-title">How the tables connect</div>
+<div class="rel"><span class="a">Profiles</span><span class="arrow">&rarr;</span><span class="label">installed on</span><span class="arrow">&rarr;</span><span class="b">SIM cards</span></div>
+<div class="explain">via Profile installations (tracks which profile is on which SIM, and when)</div>
+<div class="rel"><span class="a">SIM cards</span><span class="arrow">&rarr;</span><span class="label">subscribed to</span><span class="arrow">&rarr;</span><span class="b">Bundles</span></div>
+<div class="explain">via SIM card plans (tracks plan changes: activations, upgrades, swaps)</div>
+<div class="rel"><span class="a">Bundles</span><span class="arrow">&rarr;</span><span class="label">priced by</span><span class="arrow">&rarr;</span><span class="b">Rate cards</span></div>
+<div class="explain">rates vary by country, network, and technology (4G vs 5G)</div>
+<div class="rel"><span class="a">Profiles</span><span class="arrow">&rarr;</span><span class="label">generates</span><span class="arrow">&rarr;</span><span class="b">Usage events</span></div>
+<div class="explain">each data usage session is recorded as an event</div>
+<div class="rel"><span class="a">Network tech</span><span class="arrow">&rarr;</span><span class="label">classifies</span><span class="arrow">&rarr;</span><span class="b">Usage events + Rate cards</span></div>
+<div class="explain">lookup table that maps all tech names (LTE, 4g, NR...) to standard codes (4G, 5G)</div>
+</div>
+
+<div class="note">
+PK = primary key (unique identifier for each row) &bull;
+FK = foreign key (links to another table's primary key) &bull;
+Orange badges = validation rules the database enforces automatically.
+<br>Date ranges use NULL to mean "still active" — no end date means the record is current.
+</div>
+</body>
+</html>

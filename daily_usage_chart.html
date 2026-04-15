@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Total Usage (MB) Per Day</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: #0c0f1a;
+    color: #e2e8f0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+  
+  .chart-container {
+    background: linear-gradient(145deg, #141829, #1a1f35);
+    border: 1px solid rgba(99, 179, 237, 0.12);
+    border-radius: 16px;
+    padding: 2.5rem;
+    max-width: 960px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+  
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin-bottom: 0.25rem;
+    letter-spacing: -0.02em;
+  }
+  
+  .subtitle {
+    font-size: 0.85rem;
+    color: #718096;
+    margin-bottom: 2rem;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  
+  .chart-wrapper {
+    position: relative;
+    width: 100%;
+    overflow-x: auto;
+  }
+  
+  svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  
+  .grid-line { stroke: rgba(99, 179, 237, 0.06); stroke-width: 1; }
+  .axis-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    fill: #4a5568;
+  }
+  .axis-label-y {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    fill: #4a5568;
+    text-anchor: end;
+  }
+  
+  .data-line {
+    fill: none;
+    stroke: url(#lineGradient);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  
+  .area-fill {
+    fill: url(#areaGradient);
+  }
+  
+  .data-point {
+    fill: #63b3ed;
+    stroke: #141829;
+    stroke-width: 2;
+    transition: r 0.2s ease;
+    cursor: pointer;
+  }
+  .data-point:hover { r: 6; }
+  
+  .tooltip {
+    position: absolute;
+    background: #1a1f35;
+    border: 1px solid rgba(99, 179, 237, 0.25);
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: #e2e8f0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    white-space: nowrap;
+    z-index: 10;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  .tooltip.visible { opacity: 1; }
+  .tooltip .date { color: #718096; font-size: 0.65rem; }
+  .tooltip .value { color: #63b3ed; font-weight: 500; font-size: 0.85rem; }
+  
+  .stats-row {
+    display: flex;
+    gap: 2rem;
+    margin-top: 1.75rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid rgba(99, 179, 237, 0.08);
+  }
+  .stat { flex: 1; }
+  .stat-label {
+    font-size: 0.7rem;
+    color: #4a5568;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 0.25rem;
+  }
+  .stat-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #63b3ed;
+  }
+  
+  .note {
+    margin-top: 1rem;
+    font-size: 0.7rem;
+    color: #4a5568;
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+<div class="chart-container">
+  <h1>Total Usage (MB) Per Day</h1>
+  <p class="subtitle">January 2026 &middot; Deduplicated &middot; Negative values excluded</p>
+  
+  <div class="chart-wrapper" id="chartWrapper">
+    <div class="tooltip" id="tooltip">
+      <div class="date" id="ttDate"></div>
+      <div class="value" id="ttValue"></div>
+    </div>
+  </div>
+  
+  <div class="stats-row">
+    <div class="stat">
+      <div class="stat-label">Total Usage</div>
+      <div class="stat-value" id="totalUsage"></div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Peak Day</div>
+      <div class="stat-value" id="peakDay"></div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Avg / Day</div>
+      <div class="stat-value" id="avgDay"></div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Active Days</div>
+      <div class="stat-value" id="activeDays"></div>
+    </div>
+  </div>
+  
+  <p class="note">* One event with date 2035-01-01 excluded as a data quality issue (likely a typo). See analysis documentation.</p>
+</div>
+
+<script>
+const rawData = [
+  {"date":"2026-01-05","mb":20},{"date":"2026-01-06","mb":10},
+  {"date":"2026-01-07","mb":25},{"date":"2026-01-08","mb":19},
+  {"date":"2026-01-09","mb":30},{"date":"2026-01-10","mb":105},
+  {"date":"2026-01-11","mb":5},{"date":"2026-01-13","mb":69},
+  {"date":"2026-01-14","mb":30},{"date":"2026-01-15","mb":12},
+  {"date":"2026-01-16","mb":50},{"date":"2026-01-17","mb":40},
+  {"date":"2026-01-18","mb":33},{"date":"2026-01-19","mb":56},
+  {"date":"2026-01-20","mb":18},{"date":"2026-01-21","mb":75},
+  {"date":"2026-01-24","mb":16},{"date":"2026-01-25","mb":17},
+  {"date":"2026-01-26","mb":44}
+];
+
+// Exclude the 2035 outlier
+const data = rawData.filter(d => d.date.startsWith('2026'));
+
+const margin = { top: 20, right: 30, bottom: 50, left: 55 };
+const width = 880;
+const height = 340;
+const innerW = width - margin.left - margin.right;
+const innerH = height - margin.top - margin.bottom;
+
+const maxMB = Math.ceil(Math.max(...data.map(d => d.mb)) / 20) * 20;
+
+function x(i) { return margin.left + (i / (data.length - 1)) * innerW; }
+function y(mb) { return margin.top + innerH - (mb / maxMB) * innerH; }
+
+// Build SVG
+let svg = `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">`;
+svg += `<defs>
+  <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0%" stop-color="#4299e1"/>
+    <stop offset="50%" stop-color="#63b3ed"/>
+    <stop offset="100%" stop-color="#90cdf4"/>
+  </linearGradient>
+  <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="rgba(99,179,237,0.18)"/>
+    <stop offset="100%" stop-color="rgba(99,179,237,0)"/>
+  </linearGradient>
+</defs>`;
+
+// Grid lines
+const yTicks = [0, 20, 40, 60, 80, 100, 120];
+for (const tick of yTicks) {
+  const yy = y(tick);
+  svg += `<line x1="${margin.left}" y1="${yy}" x2="${width - margin.right}" y2="${yy}" class="grid-line"/>`;
+  svg += `<text x="${margin.left - 8}" y="${yy + 3}" class="axis-label-y">${tick}</text>`;
+}
+
+// Y axis label
+svg += `<text x="14" y="${margin.top + innerH/2}" class="axis-label-y" transform="rotate(-90 14 ${margin.top + innerH/2})" style="font-size:11px;fill:#718096">Usage (MB)</text>`;
+
+// Area
+let areaPath = `M ${x(0)} ${y(data[0].mb)}`;
+for (let i = 1; i < data.length; i++) areaPath += ` L ${x(i)} ${y(data[i].mb)}`;
+areaPath += ` L ${x(data.length-1)} ${y(0)} L ${x(0)} ${y(0)} Z`;
+svg += `<path d="${areaPath}" class="area-fill"/>`;
+
+// Line
+let linePath = `M ${x(0)} ${y(data[0].mb)}`;
+for (let i = 1; i < data.length; i++) linePath += ` L ${x(i)} ${y(data[i].mb)}`;
+svg += `<path d="${linePath}" class="data-line"/>`;
+
+// Points and x-axis labels
+for (let i = 0; i < data.length; i++) {
+  const cx = x(i), cy = y(data[i].mb);
+  svg += `<circle cx="${cx}" cy="${cy}" r="3.5" class="data-point" data-idx="${i}"/>`;
+  
+  // Show every other label to avoid crowding
+  if (i % 2 === 0 || i === data.length - 1) {
+    const label = data[i].date.slice(5); // MM-DD
+    svg += `<text x="${cx}" y="${height - 12}" class="axis-label" text-anchor="middle" transform="rotate(-35 ${cx} ${height - 12})">${label}</text>`;
+  }
+}
+
+svg += '</svg>';
+
+document.getElementById('chartWrapper').insertAdjacentHTML('afterbegin', svg);
+
+// Stats
+const totalMB = data.reduce((s, d) => s + d.mb, 0);
+const peakIdx = data.reduce((best, d, i) => d.mb > data[best].mb ? i : best, 0);
+document.getElementById('totalUsage').textContent = totalMB.toFixed(0) + ' MB';
+document.getElementById('peakDay').textContent = data[peakIdx].date.slice(5) + ' (' + data[peakIdx].mb + ' MB)';
+document.getElementById('avgDay').textContent = (totalMB / data.length).toFixed(1) + ' MB';
+document.getElementById('activeDays').textContent = data.length;
+
+// Tooltip
+const tooltip = document.getElementById('tooltip');
+const ttDate = document.getElementById('ttDate');
+const ttValue = document.getElementById('ttValue');
+
+document.querySelectorAll('.data-point').forEach(pt => {
+  pt.addEventListener('mouseenter', e => {
+    const i = +pt.dataset.idx;
+    ttDate.textContent = data[i].date;
+    ttValue.textContent = data[i].mb.toFixed(1) + ' MB';
+    tooltip.classList.add('visible');
+    
+    const rect = document.getElementById('chartWrapper').getBoundingClientRect();
+    const svgEl = document.querySelector('svg');
+    const svgRect = svgEl.getBoundingClientRect();
+    const scaleX = svgRect.width / width;
+    const scaleY = svgRect.height / height;
+    
+    const px = x(i) * scaleX;
+    const py = y(data[i].mb) * scaleY;
+    
+    tooltip.style.left = (px - 40) + 'px';
+    tooltip.style.top = (py - 55) + 'px';
+  });
+  pt.addEventListener('mouseleave', () => tooltip.classList.remove('visible'));
+});
+</script>
+</body>
+</html>
